@@ -65,9 +65,7 @@ CREATE TABLE movements (
     movement_type          VARCHAR(10)   NOT NULL CHECK (movement_type IN ('DEBIT', 'CREDIT')),
     amount                 NUMERIC(15,2) NOT NULL CHECK (amount > 0),
     balance_after_movement NUMERIC(15,2) NOT NULL,
-    account_id             BIGINT        NOT NULL REFERENCES accounts(account_id),
-    created_at             TIMESTAMP     NOT NULL DEFAULT NOW(),
-    updated_at             TIMESTAMP     NOT NULL DEFAULT NOW(),    
+    account_id             BIGINT        NOT NULL REFERENCES accounts(account_id),   
     version                BIGINT        NOT NULL DEFAULT 0
 );
 
