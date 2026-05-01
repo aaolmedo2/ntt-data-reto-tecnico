@@ -3,6 +3,9 @@
 -- * ms1: customer-service
 -- ============================
 
+CREATE DATABASE customer_service;
+\c customer_service;
+
 -- ============================
 -- TABLE: persons
 -- ============================
@@ -11,7 +14,7 @@ CREATE TABLE persons (
     person_id        BIGSERIAL     PRIMARY KEY,
     name             VARCHAR(100)  NOT NULL,
     gender           VARCHAR(10)   NOT NULL CHECK (gender IN ('MALE', 'FEMALE', 'OTHER')),
-    identification   VARCHAR(10)   NOT NULL UNIQUE,
+    identification VARCHAR(10) NOT NULL UNIQUE CHECK (char_length(identification) = 10 AND identification ~ '^[0-9]+$'),
     address          VARCHAR(200)  NOT NULL,
     phone            VARCHAR(10)   NOT NULL,
     created_at       TIMESTAMP     NOT NULL DEFAULT NOW(),
@@ -25,7 +28,7 @@ CREATE TABLE persons (
 
 CREATE TABLE customers (
     customer_id      BIGINT        PRIMARY KEY REFERENCES persons(person_id),
-    password         VARCHAR(100)  NOT NULL,
+    password         VARCHAR(255)  NOT NULL,
     status           BOOLEAN       NOT NULL DEFAULT TRUE,
     created_at       TIMESTAMP     NOT NULL DEFAULT NOW(),
     updated_at       TIMESTAMP     NOT NULL DEFAULT NOW(),
@@ -35,6 +38,9 @@ CREATE TABLE customers (
 -- ============================
 -- * ms2: account-service
 -- ============================
+
+CREATE DATABASE account_service;
+\c account_service;
 
 -- ============================
 -- TABLE: accounts
@@ -71,3 +77,61 @@ CREATE TABLE movements (
 
 CREATE INDEX idx_movements_account_id ON movements(account_id);
 CREATE INDEX idx_movements_date       ON movements(date);
+
+-- RELACIONES
+
+ALTER TABLE customers
+ADD CONSTRAINT fk_customers_persons
+FOREIGN KEY (customer_id)
+REFERENCES persons(person_id)
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+
+ALTER TABLE accounts
+ADD CONSTRAINT fk_accounts_customers
+FOREIGN KEY (customer_id)
+REFERENCES customers(customer_id)
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+
+ALTER TABLE movements
+ADD CONSTRAINT fk_movements_accounts
+FOREIGN KEY (account_id)
+REFERENCES accounts(account_id)
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+
+
+-- Función genérica para actualizar el campo updated_at
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger para la tabla persons
+CREATE TRIGGER trg_persons_updated_at
+BEFORE UPDATE ON persons
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+-- Trigger para la tabla customers
+CREATE TRIGGER trg_customers_updated_at
+BEFORE UPDATE ON customers
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+-- Trigger para la tabla accounts
+CREATE TRIGGER trg_accounts_updated_at
+BEFORE UPDATE ON accounts
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+-- Trigger para la tabla movements
+CREATE TRIGGER trg_movements_updated_at
+BEFORE UPDATE ON movements
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
