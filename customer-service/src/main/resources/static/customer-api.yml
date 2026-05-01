@@ -171,6 +171,9 @@ components:
           maxLength: 100
           format: password
           example: "newpass"
+        status:
+          type: boolean
+          example: true
 
     CustomerResponse:
       type: object
