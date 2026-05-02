@@ -312,8 +312,12 @@ components:
         - accountNumber
         - accountType
         - initialBalance
-        - customerId
+        - customerIdentification
       properties:
+        accountNumber:
+          type: string
+          description: Client-provided account number
+          example: "1234567890"
         accountType:
           type: string
           enum: [SAVINGS, CHECKING]
@@ -362,9 +366,30 @@ components:
         status:
           type: boolean
           example: true
-        customerIdentification:
+        customer:
+          $ref: '#/components/schemas/CustomerSummary'
+
+    CustomerSummary:
+      type: object
+      properties:
+        name:
           type: string
-          example: "123456789"
+          example: "SOFIA DELGADO"
+        gender:
+          type: string
+          example: "MALE"
+        identification:
+          type: string
+          example: "1719027011"
+        address:
+          type: string
+          example: "SAN ISIDRO DEL INCA"
+        phone:
+          type: string
+          example: "0984604606"
+        status:
+          type: boolean
+          example: false
 
     # ── MOVEMENT ──────────────────────────────────────────────────────────────
 
@@ -409,6 +434,8 @@ components:
           format: double
           description: Snapshot of balance immediately after this movement
           example: 1425.00
+        account:
+          $ref: '#/components/schemas/AccountResponse'
 
     # ── REPORT ────────────────────────────────────────────────────────────────
 

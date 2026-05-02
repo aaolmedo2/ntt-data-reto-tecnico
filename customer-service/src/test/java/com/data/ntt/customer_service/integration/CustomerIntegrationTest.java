@@ -1,7 +1,6 @@
 package com.data.ntt.customer_service.integration;
 
 import com.data.ntt.customer_service.application.service.CustomerService;
-import com.data.ntt.customer_service.domain.model.Customer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
