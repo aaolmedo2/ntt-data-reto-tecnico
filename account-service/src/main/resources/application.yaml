@@ -1,4 +1,14 @@
+server:
+    port: 8082
 spring:
+  profiles:
+    active: local-dev
+
+---
+spring:
+  config:
+      activate:
+          on-profile: local-dev
   application:
     name: account-service
   datasource:
@@ -15,12 +25,101 @@ spring:
       hibernate:
         '[format_sql]': true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-server:
-    port: 8082
+
 logging:
     level:
         root: INFO
         '[com.data.ntt.account_service]': DEBUG
+
 customer-service:
     base-url: http://localhost:8081
 
+---
+spring:
+  config:
+      activate:
+          on-profile: docker-dev
+  application:
+    name: account-service
+  datasource:
+    url: jdbc:postgresql://host.docker.internal:5432/account_service
+    username: postgres
+    password: root
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        '[format_sql]': true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+    level:
+        root: INFO
+        '[com.data.ntt.account_service]': DEBUG
+
+customer-service:
+    base-url: http://host.docker.internal:8081
+
+---
+spring:
+  config:
+      activate:
+          on-profile: test
+  application:
+    name: account-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/account_service_test
+    username: postgres
+    password: root
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        '[format_sql]': true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+    level:
+        root: INFO
+        '[com.data.ntt.account_service]': DEBUG
+
+customer-service:
+    base-url: http://localhost:8081
+
+---
+spring:
+  config:
+      activate:
+          on-profile: prod
+  application:
+    name: account-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/account_service
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        '[format_sql]': true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+    level:
+        root: INFO
+        '[com.data.ntt.account_service]': DEBUG
+
+customer-service:
+    base-url: http://customer-service:8081

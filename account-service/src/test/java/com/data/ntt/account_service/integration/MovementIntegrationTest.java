@@ -1,4 +1,4 @@
-package com.data.ntt.account_service.interfaces.controller;
+package com.data.ntt.account_service.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,7 +23,7 @@ import com.data.ntt.account_service.interfaces.dto.request.MovementRequest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class MovementControllerIT {
+class MovementIntegrationTest {
 	private static final String ACCOUNT_NUMBER = "ACC0000001";
 
 	@LocalServerPort

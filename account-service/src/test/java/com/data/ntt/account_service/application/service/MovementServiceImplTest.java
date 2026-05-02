@@ -1,4 +1,4 @@
-package com.data.ntt.account_service.application.service.impl;
+package com.data.ntt.account_service.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.data.ntt.account_service.application.service.impl.MovementServiceImpl;
 import com.data.ntt.account_service.domain.enums.AccountType;
 import com.data.ntt.account_service.domain.enums.MovementType;
 import com.data.ntt.account_service.domain.model.Movement;
