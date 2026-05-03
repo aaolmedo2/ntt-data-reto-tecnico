@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -33,6 +34,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 class MovementServiceImplTest {
     private static final String ACCOUNT_NUMBER = "ACC0000001";
 
@@ -56,25 +58,7 @@ class MovementServiceImplTest {
     }
 
     @Test
-    void createMovementDebitInsufficientBalanceEmitsError() {
-        mockTransactionTemplate();
-        when(accountRepository.findByAccountNumberAndStatusTrue(ACCOUNT_NUMBER))
-                .thenReturn(Optional.of(buildAccount(new BigDecimal("5.00"))));
-
-        Movement movement = buildMovement(MovementType.DEBIT, new BigDecimal("10.00"));
-        Mono<Movement> result = service.createMovement(ACCOUNT_NUMBER, movement);
-
-        StepVerifier.create(result)
-                .expectErrorSatisfies(error -> assertThat(error)
-                        .isInstanceOf(InsufficientBalanceException.class))
-                .verify();
-
-        verify(accountRepository, never()).save(any(AccountEntity.class));
-        verify(movementRepository, never()).save(any(MovementEntity.class));
-    }
-
-    @Test
-    void createMovementDebitSuccessUpdatesBalanceAndReturnsMovement() {
+    void createMovementCreditAddsAmountToBalance() {
         mockTransactionTemplate();
         AccountEntity account = buildAccount(new BigDecimal("100.00"));
         when(accountRepository.findByAccountNumberAndStatusTrue(ACCOUNT_NUMBER))
@@ -87,22 +71,72 @@ class MovementServiceImplTest {
                     return entity;
                 });
 
-        Movement movement = buildMovement(MovementType.DEBIT, new BigDecimal("25.00"));
+        Movement movement = buildMovement(MovementType.CREDIT, new BigDecimal("50.00"));
         Mono<Movement> result = service.createMovement(ACCOUNT_NUMBER, movement);
 
         StepVerifier.create(result)
                 .assertNext(saved -> {
-                    assertThat(saved.getType()).isEqualTo(MovementType.DEBIT);
-                    assertThat(saved.getAmount()).isEqualByComparingTo("25.00");
-                    assertThat(saved.getBalanceAfterMovement()).isEqualByComparingTo("75.00");
-                    assertThat(saved.getAccountId()).isEqualTo(1L);
+                    assertThat(saved.getType()).isEqualTo(MovementType.CREDIT);
+                    assertThat(saved.getAmount()).isEqualByComparingTo("50.00");
+                    assertThat(saved.getBalanceAfterMovement()).isEqualByComparingTo("150.00");
                     assertThat(saved.getDate()).isNotNull();
                 })
                 .verifyComplete();
 
         ArgumentCaptor<AccountEntity> accountCaptor = ArgumentCaptor.forClass(AccountEntity.class);
         verify(accountRepository).save(accountCaptor.capture());
-        assertThat(accountCaptor.getValue().getAvailableBalance()).isEqualByComparingTo("75.00");
+        assertThat(accountCaptor.getValue().getAvailableBalance()).isEqualByComparingTo("150.00");
+    }
+
+    @Test
+    void createMovementDebitSubtractsAmountFromBalance() {
+        mockTransactionTemplate();
+        AccountEntity account = buildAccount(new BigDecimal("200.00"));
+        when(accountRepository.findByAccountNumberAndStatusTrue(ACCOUNT_NUMBER))
+                .thenReturn(Optional.of(account));
+        when(movementRepository.save(any(MovementEntity.class)))
+                .thenAnswer(invocation -> {
+                    MovementEntity entity = invocation.getArgument(0);
+                    entity.setMovementId(2L);
+                    entity.setVersion(1L);
+                    return entity;
+                });
+
+        Movement movement = buildMovement(MovementType.DEBIT, new BigDecimal("100.00"));
+        Mono<Movement> result = service.createMovement(ACCOUNT_NUMBER, movement);
+
+        StepVerifier.create(result)
+                .assertNext(saved -> {
+                    assertThat(saved.getType()).isEqualTo(MovementType.DEBIT);
+                    assertThat(saved.getAmount()).isEqualByComparingTo("100.00");
+                    assertThat(saved.getBalanceAfterMovement()).isEqualByComparingTo("100.00");
+                    assertThat(saved.getDate()).isNotNull();
+                })
+                .verifyComplete();
+
+        ArgumentCaptor<AccountEntity> accountCaptor = ArgumentCaptor.forClass(AccountEntity.class);
+        verify(accountRepository).save(accountCaptor.capture());
+        assertThat(accountCaptor.getValue().getAvailableBalance()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void createMovementDebitInsufficientBalanceThrowsException() {
+        mockTransactionTemplate();
+        when(accountRepository.findByAccountNumberAndStatusTrue(ACCOUNT_NUMBER))
+                .thenReturn(Optional.of(buildAccount(new BigDecimal("100.00"))));
+
+        Movement movement = buildMovement(MovementType.DEBIT, new BigDecimal("150.00"));
+        Mono<Movement> result = service.createMovement(ACCOUNT_NUMBER, movement);
+
+        StepVerifier.create(result)
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(InsufficientBalanceException.class);
+                    assertThat(error.getMessage()).containsIgnoringCase("Saldo no disponible");
+                })
+                .verify();
+
+        verify(accountRepository, never()).save(any(AccountEntity.class));
+        verify(movementRepository, never()).save(any(MovementEntity.class));
     }
 
     private void mockTransactionTemplate() {
@@ -131,5 +165,4 @@ class MovementServiceImplTest {
                 .amount(amount)
                 .build();
     }
-
 }
