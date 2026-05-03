@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -33,6 +34,9 @@ import reactor.core.scheduler.Schedulers;
 @Service
 @RequiredArgsConstructor
 public class MovementServiceImpl implements MovementService {
+	private static final ZoneId UTC = ZoneId.of("UTC");
+	private static final ZoneId ECUADOR_ZONE = ZoneId.of("America/Guayaquil"); // UTC-5
+
 	private final AccountRepository accountRepository;
 	private final MovementRepository movementRepository;
 	private final MovementEntityMapper movementEntityMapper;
@@ -82,7 +86,20 @@ public class MovementServiceImpl implements MovementService {
 			return entities;
 		}).subscribeOn(Schedulers.boundedElastic())
 				.flatMapMany(Flux::fromIterable)
-				.map(movementEntityMapper::toDomain);
+				.map(movementEntityMapper::toDomain)
+				.map(this::toEcuadorTime);
+	}
+
+	private Movement toEcuadorTime(Movement movement) {
+		if (movement.getDate() == null)
+			return movement;
+		LocalDateTime ecuadorDate = movement.getDate()
+				.atZone(UTC)
+				.withZoneSameInstant(ECUADOR_ZONE)
+				.toLocalDateTime();
+		return movement.toBuilder()
+				.date(ecuadorDate)
+				.build();
 	}
 
 	private void validateMovement(Movement movement) {

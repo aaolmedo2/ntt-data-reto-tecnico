@@ -2,6 +2,8 @@ package com.data.ntt.account_service.interfaces.dto.mapper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -18,7 +20,18 @@ import com.data.ntt.account_service.domain.model.Movement;
 @Component
 public class AccountStatementExcelExporter {
 	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
-	private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+	private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+	private static final ZoneId UTC = ZoneId.of("UTC");
+	private static final ZoneId ECUADOR_ZONE = ZoneId.of("America/Guayaquil"); // UTC-5
+
+	private LocalDateTime toEcuadorTime(LocalDateTime utcDateTime) {
+		if (utcDateTime == null)
+			return null;
+		return utcDateTime
+				.atZone(UTC)
+				.withZoneSameInstant(ECUADOR_ZONE)
+				.toLocalDateTime();
+	}
 
 	public byte[] export(AccountStatement statement) {
 		try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
@@ -90,8 +103,9 @@ public class AccountStatementExcelExporter {
 		row.createCell(4).setCellValue(account.getStatus() != null && account.getStatus());
 
 		if (movement != null) {
+			LocalDateTime ecuadorDate = toEcuadorTime(movement.getDate());
 			row.createCell(5)
-					.setCellValue(movement.getDate() != null ? movement.getDate().format(DATE_TIME_FORMAT) : "");
+					.setCellValue(ecuadorDate != null ? ecuadorDate.format(DATE_TIME_FORMAT) : "");
 			row.createCell(6).setCellValue(movement.getType() != null ? movement.getType().name() : "");
 			row.createCell(7).setCellValue(movement.getAmount() != null ? movement.getAmount().doubleValue() : 0.0);
 			row.createCell(8).setCellValue(movement.getBalanceAfterMovement() != null
