@@ -1,0 +1,86 @@
+version: '3.9'
+
+services:
+
+  # ============================
+  # DB1 - CUSTOMER DB
+  # ============================
+  customer-db:
+    image: postgres:15
+    container_name: customer-db
+    environment:
+      POSTGRES_DB: customer_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - customer_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+
+  # ============================
+  # DB2 - ACCOUNT DB
+  # ============================
+  account-db:
+    image: postgres:15
+    container_name: account-db
+    environment:
+      POSTGRES_DB: account_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - account_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+
+  # ============================
+  # MS1 - CUSTOMER SERVICE
+  # ============================
+  customer-service:
+    build: ./customer-service
+    container_name: customer-service
+    depends_on:
+      - customer-db
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8081:8081"
+    networks:
+      - backend-network
+
+  # ============================
+  # MS2 - ACCOUNT SERVICE
+  # ============================
+  account-service:
+    build: ./account-service
+    container_name: account-service
+    depends_on:
+      - account-db
+      - customer-service
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8082:8082"
+    networks:
+      - backend-network
+
+# ============================
+# NETWORK
+# ============================
+networks:
+  backend-network:
+    driver: bridge
+
+# ============================
+# VOLUMES
+# ============================
+volumes:
+  customer_db_data:
+  account_db_data:
